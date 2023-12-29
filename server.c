@@ -10,13 +10,46 @@
 #include<errno.h>
 
 #define CLNT_MAX 10
+#define BUFFSIZE 200
 
 int g_clnt_socks[CLNT_MAX];		//for client-socket(global)
 int g_clnt_count = 0;
 
+void * clnt_connection(void *arg){
+
+	int clnt_sock = *(int *)arg;
+	int str_len = 0;
+
+	char msg[BUFFSIZE];
+	int i;
+
+	while(1){
+
+	str_len = read(clnt_sock, msg,sizeof(msg));		//클라이언트로 부터 온 메시지를 읽음
+
+	if (str_len == -1)		//세션이 끊어진 상황
+	{
+		printf("clnt[%d] exit\n",clnt_sock);
+		break;
+	}
+
+	printf("%s\n",msg);		//클라이언트로 부터 온 메시지를 뿌림
+	
+
+	}
+
+	close(clnt_sock);		//소켓 닫음
+	pthread_exit(0);
+	return NULL;
+}
+
+
+
 int main(int argc, char ** argv){
 	int serv_sock;		//server-socket
 	int clnt_sock;		//client-socket
+
+	pthread_t t_thread;
 
 	struct sockaddr_in serv_addr;
 	struct sockaddr_in clnt_addr;
@@ -46,27 +79,14 @@ int main(int argc, char ** argv){
 	char buff[200];
 	int recv_len = 0;						//얼마만큼 받아왔는가?
 
-	while(1){
-
-		//여기는 계속 손님을 받는 역활을 하는 곳임//
 		clnt_addr_size = sizeof(clnt_addr);
 
-		clnt_sock = accept(serv_sock,(struct sockaddr *)&clnt_addr,&clnt_addr_size);
+		clnt_sock = accept(serv_sock,(struct sockaddr *)&clnt_addr,&clnt_addr_size);				//여기는 계속 손님을 받는 역활을 하는 곳임//
 
-		//g_clnt_socks[g_clnt_count++] = clnt_sock;		//클라이언트가 들어올때마다 클라이언트 소켓을 하나 증가시킴
+		pthread_create(&t_thread,NULL,clnt_connection,&clnt_sock);
 
-		recv_len = read(clnt_sock,buff,200);			//클라이언트에게 받아온 버퍼에 저장
-
-		printf("recv : ");
-
-		for(int i=0;i< recv_len; i++){
-			printf("%02X",(unsigned char)buff[i]);				//받은게 뿌려짐
-		}
-
-		printf("\n");
-	
-
-	}
+	close(clnt_sock);
+	return 0;
 
 
 }
