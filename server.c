@@ -80,12 +80,19 @@ int main(int argc, char ** argv){
 	int recv_len = 0;						//얼마만큼 받아왔는가?
 
 		clnt_addr_size = sizeof(clnt_addr);
+		while(1){
 
 		clnt_sock = accept(serv_sock,(struct sockaddr *)&clnt_addr,&clnt_addr_size);				//여기는 계속 손님을 받는 역활을 하는 곳임//
 
 		pthread_create(&t_thread,NULL,clnt_connection,&clnt_sock);
 
-	close(clnt_sock);
+
+	close(clnt_sock);	
+	
+	}
+
+
+	printf("programe end\n");	
 	return 0;
 
 

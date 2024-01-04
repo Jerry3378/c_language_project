@@ -19,40 +19,60 @@ char messagep[BUFSIZE];
 int main(int argc, char **argv)
 {
     int sock;
-    struct sockaddr_in serv_addr;           //ipv4Çü½ÄÀÇ server address ¼³Á¤
+    struct sockaddr_in serv_addr;           //ipv4í˜•ì‹ì˜ server address ì„¤ì •
 
-    pthread_t snd_thread, rcv_thread;           //send thread¿Í recieve thread ¼³Á¤
+    int i = 0;
+    char id[100];
+    char chat[100] = {0};
+
+
+    if (argc < 2){
+        printf("idë¥¼ ì…ë ¥í•˜ì‹œì˜¤\n");
+    }
+
+    strcpy(id,argv[1]);
+
+    pthread_t snd_thread, rcv_thread;           //send threadì™€ recieve thread ì„¤ì •
 
     void *thread_result;
 
-    sock = socket(PF_INET,SOCK_STREAM,0);           //ipv4Çü½ÄÀÇ tcp/ipÅë½ÅÀ»ÇÏ´Â ¼ÒÄÏÀ» ±¸¸ÛÀ» ¸¸µê
+    sock = socket(AF_INET,SOCK_STREAM,0);           //ipv4í˜•ì‹ì˜ tcp/ipí†µì‹ ì„í•˜ëŠ” ì†Œì¼“ì„ êµ¬ë©ì„ ë§Œë“¦
 
-    if (sock == -1)
-    {
-        printf("socket() error");
-    }
-        memset(&serv_addr,0,sizeof(serv_addr));             //serv_addrÀ» 0À¸·Î ¸Ş¸ğ¸® ÃÊ±âÈ­
+    if(sock == -1){
+	    perror("socket error : ");
+    } 
 
-        serv_addr.sin_family = PF_INET;                 //tcp, ip4Çü½ÄÀ¸·Î Á¢¼Ó
-        serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");     //127.0.0.1·Î Á¢¼Ó (°°Àº pc»óÀ¸·Î´Â 127.0.0.1ÀÓ)
-        serv_addr.sin_port = htons(4000);                //Æ÷Æ® ¹øÈ£´Â 4000À¸·Î ÇßÀ½
 
-        if (connect(sock, (struct sockaddr *)&serv_addr,sizeof(serv_addr)) == -1)     //¿¬°áÇßÀ½
+        memset(&serv_addr,0,sizeof(serv_addr));             //serv_addrì„ 0ìœ¼ë¡œ ë©”ëª¨ë¦¬ ì´ˆê¸°í™”
+
+        serv_addr.sin_family = PF_INET;                 //tcp, ip4í˜•ì‹ìœ¼ë¡œ ì ‘ì†
+        serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");     //127.0.0.1ë¡œ ì ‘ì† (ê°™ì€ pcìƒìœ¼ë¡œëŠ” 127.0.0.1ì„)
+        serv_addr.sin_port = htons(4000);                //í¬íŠ¸ ë²ˆí˜¸ëŠ” 4000ìœ¼ë¡œ í–ˆìŒ
+
+        if (connect(sock, (struct sockaddr *)&serv_addr,sizeof(serv_addr)) == -1)     //ì—°ê²°í–ˆìŒ ì—°ê²°ì´ ì‹¤íŒ¨ í•  ê²½ìš° -1ì„ ë°˜í™˜
         {
-            printf("connect error");
+            perror("error code : ");
         }
 
-        unsigned char msg [100] = {0x01,2,3,4,5,6,1,2,3,4,2,1,2,3,0x0c};
+        char msg [1000];
         
+        printf("while before\n");
         while(1){
 
-            printf("send : ");
-            write(sock,msg,15);                                 //msg³»¿ëÀ» º¸³¿
+	    printf("chat : ");
+            fgets(chat,sizeof(chat),stdin);
+
+            printf("send : %s\n",chat);
+            sprintf(msg,"[%s] : %s",id,chat);
+            write(sock,msg,strlen(msg)+1);               //msgë‚´ìš©ì„ ë³´ëƒ„
+                                             
             sleep(1);
 
         }
+        printf("while end");
 
         close(sock);
         return 0;
     
 }
+
