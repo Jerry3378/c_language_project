@@ -64,8 +64,10 @@ int main(int argc, char **argv)
 
             printf("send : %s\n",chat);
             sprintf(msg,"[%s] : %s",id,chat);
-            write(sock,msg,strlen(msg)+1);               //msg내용을 보냄
-                                             
+            printf("[%s] : %s\n",id,chat);
+            if (write(sock,msg,strlen(msg)+1) == -1)               //msg내용을 보냄
+                perror("write : ");
+
             sleep(1);
 
         }
