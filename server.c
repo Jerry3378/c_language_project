@@ -12,6 +12,8 @@
 #define CLNT_MAX 10
 #define BUFFSIZE 200
 
+pthread_mutex_t g_mutex;
+
 int g_clnt_socks[CLNT_MAX];		//for client-socket(global)
 int g_clnt_count = 0;
 
@@ -25,21 +27,31 @@ void * clnt_connection(void *arg){
 
 	while(1){
 
-	str_len = read(clnt_sock, msg,sizeof(msg));		//클라이언트로 부터 온 메시지를 읽음
+	str_len = read(clnt_sock, msg,sizeof(msg));		//?겢?씪?씠?뼵?듃濡? 遺??꽣 ?삩 硫붿떆吏?瑜? ?씫?쓬
 
-	if (str_len == -1)		//세션이 끊어진 상황
+	if (str_len == -1)		//?꽭?뀡?씠 ?걡?뼱吏? ?긽?솴
 	{
 		perror("clnt error : \n");
 		printf("clnt[%d] exit\n",clnt_sock);
 		break;
 	}
 
-	printf("%s\n",msg);		//클라이언트로 부터 온 메시지를 뿌림
+	printf("%s\n",msg);		//?겢?씪?씠?뼵?듃濡? 遺??꽣 ?삩 硫붿떆吏?瑜? 肉뚮┝
 	
+	pthread_mutex_lock(&g_mutex);
 
+	for (int i=0;i<g_clnt_count;i++){ 
+		if(g_clnt_socks[i] != clnt_sock){				//accept? ????? ?? ?? ??? ??? ????? ??? 
+			printf("sned : %s\n",msg);
+			write(g_clnt_socks[i],msg,strlen(msg)+1);
+			}
+		}
+	pthread_mutex_unlock(&g_mutex);
+	
+		
 	}
 
-	close(clnt_sock);		//소켓 닫음
+	close(clnt_sock);		//?냼耳? ?떕?쓬
 	pthread_exit(0);
 	return NULL;
 }
@@ -50,11 +62,15 @@ int main(int argc, char ** argv){
 	int serv_sock;		//server-socket
 	int clnt_sock;		//client-socket
 
+	int my_sock;		//?????? ??? ?? ??? ?? ?????
+
 	pthread_t t_thread;
+	
+	pthread_mutex_init(&g_mutex,NULL);
 
 	struct sockaddr_in serv_addr;
 	struct sockaddr_in clnt_addr;
-	memset(&serv_addr,0,sizeof(serv_addr));			//0으로 서버 어드레스 메모리 셋팅 
+	memset(&serv_addr,0,sizeof(serv_addr));			//0?쑝濡? ?꽌踰? ?뼱?뱶?젅?뒪 硫붾え由? ?뀑?똿 
 	memset(&clnt_addr,0,sizeof(clnt_addr));
 
 	serv_sock = socket(PF_INET,SOCK_STREAM,0);		//PF_INET : connect to ipv4, SOCK_STREAM : TCP/IP type, 0 : protocol_num
@@ -66,24 +82,28 @@ int main(int argc, char ** argv){
 
 	serv_addr.sin_port = htons(4000);				//change host's order way into network way shorts port (16bits)
 
-	if (bind(serv_sock,(const struct sockaddr *)&serv_addr,sizeof(serv_addr)) == -1){				//sizeof(serv_addr) == -1 이라고 써서 invalid argument라고 뜬 거였음
+	if (bind(serv_sock,(const struct sockaddr *)&serv_addr,sizeof(serv_addr)) == -1){				//sizeof(serv_addr) == -1 ?씠?씪怨? ?뜥?꽌 invalid argument?씪怨? ?쑍 嫄곗???쓬
 		printf("bind error\n");	
 		printf("value of socket %d",serv_sock);	
 		fprintf(stderr, "Error code: %d\n", errno);
 		exit(-1);
 	}
 
-	if(listen(serv_sock,5) == -1){					//몇명을 listen상태로 대기 가능한가
+	if(listen(serv_sock,5) == -1){					//紐뉖챸?쓣 listen?긽?깭濡? ???湲? 媛??뒫?븳媛?
 		printf("listen error");
 	}
 
 	char buff[200];
-	int recv_len = 0;						//얼마만큼 받아왔는가?
+	int recv_len = 0;						//?뼹留덈쭔?겮 諛쏆븘?솕?뒗媛??
 
 		clnt_addr_size = sizeof(clnt_addr);
 	while(1){
 
-		clnt_sock = accept(serv_sock,(struct sockaddr *)&clnt_addr,&clnt_addr_size);				//여기는 계속 손님을 받는 역활을 하는 곳임//
+		clnt_sock = accept(serv_sock,(struct sockaddr *)&clnt_addr,&clnt_addr_size);				//?뿬湲곕뒗 怨꾩냽 ?넀?떂?쓣 諛쏅뒗 ?뿭?솢?쓣 ?븯?뒗 怨녹엫//
+
+		pthread_mutex_lock(&g_mutex);
+		g_clnt_socks[g_clnt_count++] = clnt_sock;		//accept한 클라이언트들의 디스크립션값을 저장
+		pthread_mutex_unlock(&g_mutex);
 
 		pthread_create(&t_thread,NULL,clnt_connection,&clnt_sock);
 	
@@ -96,3 +116,4 @@ int main(int argc, char ** argv){
 
 
 }
+
